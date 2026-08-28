@@ -5,31 +5,184 @@
   const mobileNav = document.querySelector("#mobile-nav");
   const progress = document.querySelector("#progress-fill");
   const progressRadial = document.querySelector("#progress-radial");
-  const processMeter = document.querySelector("#process-meter");
-  const processSection = document.querySelector("#process");
-  const processVisual = document.querySelector(".process-visual");
-  const processStage = document.querySelector("#process-stage");
   const year = document.querySelector("#year");
   const heroScroll = document.querySelector(".hero-scroll");
-  const processSteps = [...document.querySelectorAll(".process-steps li")];
-  const stackStage = document.querySelector("#stack-stage");
-  const stackCards = [...document.querySelectorAll(".stack-card")];
-  const stackDots = document.querySelector("#stack-dots");
+  const heroCanvas = document.querySelector("#hero-canvas");
+  const hero = document.querySelector("#hero");
+  const heroCycle = document.querySelector("#hero-cycle");
+  const skillNavBtns = [...document.querySelectorAll(".skill-nav__btn")];
+  const skillDomains = [...document.querySelectorAll(".skill-domain")];
+  const statValues = [...document.querySelectorAll(".stat__value [data-count]")];
+  const workFilterBtns = [...document.querySelectorAll(".work-filter__btn")];
+  const projectCards = [...document.querySelectorAll(".project[data-category]")];
 
   if (year) year.textContent = String(new Date().getFullYear());
 
-  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-  const lerp = (a, b, t) => a + (b - a) * t;
+  /* Hero load sequence */
+  requestAnimationFrame(() => {
+    document.body.classList.add("is-loaded");
+  });
 
-  if (stackDots && stackCards.length) {
-    stackCards.forEach((_, i) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.setAttribute("aria-label", `Solution ${i + 1}`);
-      stackDots.appendChild(btn);
+  /* Hero cycling specialties */
+  const cyclePhrases = [
+    "AI & Automation",
+    "Full Stack Apps",
+    "Shopify Stores",
+    "Odoo ERP Systems",
+    "Python Pipelines",
+    "Bubble MVPs",
+  ];
+  let cycleIndex = 0;
+  if (heroCycle && !reduceMotion) {
+    setInterval(() => {
+      heroCycle.classList.add("is-changing");
+      setTimeout(() => {
+        cycleIndex = (cycleIndex + 1) % cyclePhrases.length;
+        heroCycle.textContent = cyclePhrases[cycleIndex];
+        heroCycle.classList.remove("is-changing");
+      }, 350);
+    }, 3200);
+  }
+
+  /* Hero particle canvas — full viewport */
+  if (heroCanvas && hero && !reduceMotion) {
+    const ctx = heroCanvas.getContext("2d");
+    let particles = [];
+    let w = 0;
+    let h = 0;
+    let mouse = { x: -999, y: -999 };
+
+    const resizeCanvas = () => {
+      const rect = hero.getBoundingClientRect();
+      w = heroCanvas.width = Math.floor(rect.width * devicePixelRatio);
+      h = heroCanvas.height = Math.floor(rect.height * devicePixelRatio);
+      heroCanvas.style.width = `${rect.width}px`;
+      heroCanvas.style.height = `${rect.height}px`;
+      const count = Math.min(56, Math.floor((rect.width * rect.height) / 18000));
+      particles = Array.from({ length: count }, () => ({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.25 * devicePixelRatio,
+        vy: (Math.random() - 0.5) * 0.25 * devicePixelRatio,
+        r: (Math.random() * 1.2 + 0.4) * devicePixelRatio,
+      }));
+    };
+
+    const drawParticles = () => {
+      if (!ctx) return;
+      ctx.clearRect(0, 0, w, h);
+      const mx = mouse.x * devicePixelRatio;
+      const my = mouse.y * devicePixelRatio;
+
+      particles.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0 || p.x > w) p.vx *= -1;
+        if (p.y < 0 || p.y > h) p.vy *= -1;
+
+        const dx = p.x - mx;
+        const dy = p.y - my;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 120 * devicePixelRatio) {
+          p.x += dx * 0.012;
+          p.y += dy * 0.012;
+        }
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(26, 92, 82, 0.35)";
+        ctx.fill();
+      });
+
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const a = particles[i];
+          const b = particles[j];
+          const d = Math.hypot(a.x - b.x, a.y - b.y);
+          if (d > 140 * devicePixelRatio) continue;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.strokeStyle = `rgba(26, 92, 82, ${0.12 * (1 - d / (140 * devicePixelRatio))})`;
+          ctx.lineWidth = devicePixelRatio;
+          ctx.stroke();
+        }
+      }
+      requestAnimationFrame(drawParticles);
+    };
+
+    resizeCanvas();
+    drawParticles();
+    window.addEventListener("resize", resizeCanvas);
+    hero.addEventListener("mousemove", (e) => {
+      const rect = hero.getBoundingClientRect();
+      mouse.x = e.clientX - rect.left;
+      mouse.y = e.clientY - rect.top;
+    });
+    hero.addEventListener("mouseleave", () => {
+      mouse.x = -999;
+      mouse.y = -999;
     });
   }
-  const dots = [...(stackDots?.querySelectorAll("button") || [])];
+
+  /* Skill domain tabs */
+  skillNavBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const target = btn.dataset.target;
+      if (!target) return;
+      skillNavBtns.forEach((b) => b.classList.toggle("is-active", b === btn));
+      skillDomains.forEach((domain) => {
+        domain.classList.toggle("is-active", domain.dataset.domain === target);
+      });
+    });
+  });
+
+  /* Stat counters */
+  const animateCount = (el) => {
+    const end = Number(el.dataset.count || 0);
+    const suffix = el.dataset.suffix || "";
+    const duration = 1200;
+    const start = performance.now();
+    const tick = (now) => {
+      const p = Math.min(1, (now - start) / duration);
+      const eased = 1 - (1 - p) ** 3;
+      el.textContent = `${Math.round(end * eased)}${suffix}`;
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
+
+  if (statValues.length && "IntersectionObserver" in window) {
+    const statIo = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          animateCount(entry.target);
+          statIo.unobserve(entry.target);
+        });
+      },
+      { threshold: 0.5 }
+    );
+    statValues.forEach((el) => statIo.observe(el));
+  } else {
+    statValues.forEach((el) => {
+      el.textContent = `${el.dataset.count}${el.dataset.suffix || ""}`;
+    });
+  }
+
+  /* Work category filters */
+  workFilterBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const filter = btn.dataset.filter || "all";
+      workFilterBtns.forEach((b) => b.classList.toggle("is-active", b === btn));
+      projectCards.forEach((card) => {
+        const match = filter === "all" || card.dataset.category === filter;
+        card.classList.toggle("is-filtered-out", !match);
+      });
+    });
+  });
+
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
   /* Kinetic word stagger */
   document.querySelectorAll("[data-kinetic]").forEach((el) => {
@@ -49,63 +202,39 @@
   });
 
   document.querySelectorAll(".project").forEach((el, i) => {
-    el.classList.add(i % 2 === 0 ? "reveal--left" : "reveal--right");
+    el.classList.remove("reveal--left", "reveal--right");
+    el.classList.add("reveal");
+    const media = el.querySelector(".project-media");
+    const result = el.querySelector(".work-meta .work-result");
+    if (media && result && !media.querySelector(".work-result")) {
+      const badge = document.createElement("span");
+      badge.className = "work-result";
+      badge.textContent = result.textContent;
+      media.appendChild(badge);
+    }
   });
 
-  const updateStack = () => {
-    if (!stackStage || !stackCards.length) return;
-    const rect = stackStage.getBoundingClientRect();
-    const total = stackStage.offsetHeight - window.innerHeight;
-    const p = total > 0 ? clamp(-rect.top / total, 0, 1) : 0;
-    const n = stackCards.length;
-    const raw = p * (n - 0.001);
-    const active = Math.min(n - 1, Math.floor(raw));
-    const local = raw - active;
+  document.querySelectorAll(".manifesto-card, .pillar, .skill-group").forEach((el, i) => {
+    el.style.setProperty("--delay", `${(i % 4) * 90}ms`);
+  });
 
-    stackCards.forEach((card, i) => {
-      const offset = i - active;
-      let scale = 1;
-      let y = 0;
-      let opacity = 1;
-      let z = n - Math.abs(offset);
+  document.querySelectorAll(".solutions-flow .solution-card").forEach((el, i) => {
+    el.style.setProperty("--delay", `${(i % 6) * 65}ms`);
+  });
 
-      if (reduceMotion) {
-        card.style.zIndex = String(i === active ? n : 1);
-        card.style.opacity = i === active ? "1" : "0";
-        card.style.transform = "none";
-        card.classList.toggle("is-active", i === active);
-        return;
-      }
-
-      if (offset < 0) {
-        // past cards exit upward
-        const t = clamp(active - i + local, 0, 1);
-        y = -120 * t;
-        scale = lerp(1, 0.92, t);
-        opacity = 1 - t;
-        z = 1;
-      } else if (offset === 0) {
-        y = local * -28;
-        scale = lerp(1, 0.97, local);
-        opacity = 1;
-        z = n + 2;
-      } else {
-        // upcoming cards sit behind
-        const depth = offset - local;
-        y = 28 * depth;
-        scale = 1 - 0.045 * depth;
-        opacity = clamp(1 - 0.18 * depth, 0.35, 1);
-        z = n - offset;
-      }
-
-      card.style.zIndex = String(Math.round(z * 10));
-      card.style.opacity = String(opacity);
-      card.style.transform = `translate3d(0, ${y}px, 0) scale(${scale})`;
-      card.classList.toggle("is-active", i === active);
-    });
-
-    dots.forEach((dot, i) => dot.classList.toggle("is-active", i === active));
-  };
+  document.querySelectorAll(".part-divider").forEach((el) => {
+    if ("IntersectionObserver" in window) {
+      const divIo = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) entry.target.classList.add("is-visible");
+          });
+        },
+        { threshold: 0.6 }
+      );
+      divIo.observe(el);
+    }
+  });
 
   const onScroll = () => {
     const y = window.scrollY;
@@ -118,7 +247,7 @@
     if (progressRadial) progressRadial.style.strokeDashoffset = String(97.4 * (1 - pageP));
 
     let current = "";
-    document.querySelectorAll("section[id]").forEach((section) => {
+    document.querySelectorAll("section[id], .part-block[id]").forEach((section) => {
       if (y >= section.offsetTop - 130) current = section.id;
     });
     document.querySelectorAll('.nav a[href^="#"]').forEach((link) => {
@@ -126,10 +255,17 @@
     });
 
     if (!reduceMotion) {
-      document.querySelectorAll("[data-speed]").forEach((layer) => {
-        const speed = Number(layer.dataset.speed || 0);
+      document.querySelectorAll(".hero-bg .hero-mesh, .hero-bg .hero-grid, .hero-bg .hero-aurora").forEach((layer, i) => {
+        const speed = [0.08, 0.04, 0.02][i] || 0.04;
         layer.style.transform = `translate3d(0, ${y * speed}px, 0)`;
       });
+
+      const portrait = document.querySelector("#hero-portrait img");
+      if (portrait && hero) {
+        const rect = hero.getBoundingClientRect();
+        const p = clamp(-rect.top / rect.height, 0, 1);
+        portrait.style.transform = `translateY(${p * 24}px)`;
+      }
 
       document.querySelectorAll(".project.is-visible .project-media img").forEach((img) => {
         const parent = img.closest(".project");
@@ -138,35 +274,6 @@
         const mid = rect.top + rect.height / 2 - window.innerHeight / 2;
         img.style.translate = `0 ${clamp(mid * -0.04, -18, 18)}px`;
       });
-    }
-
-    /* Stacked solutions lookbook */
-    updateStack();
-
-    /* Process pin + scrollytelling + clip expand */
-    if (processSection && processMeter) {
-      const rect = processSection.getBoundingClientRect();
-      const total = processSection.offsetHeight - window.innerHeight;
-      const p = total > 0 ? clamp(-rect.top / total, 0, 1) : 0;
-      processMeter.style.width = `${p * 100}%`;
-      if (processVisual && !reduceMotion) {
-        const inset = 12 * (1 - p);
-        processVisual.style.clipPath = `inset(${inset}% ${inset}% ${inset}% ${inset}% round 0)`;
-      }
-    }
-
-    let activeStep = processSteps[0];
-    processSteps.forEach((step) => {
-      const rect = step.getBoundingClientRect();
-      const mid = rect.top + rect.height / 2;
-      const active = mid > window.innerHeight * 0.18 && mid < window.innerHeight * 0.72;
-      step.classList.toggle("is-active", active);
-      if (active) activeStep = step;
-    });
-    if (processStage && activeStep) {
-      const num = activeStep.dataset.num || "01";
-      const label = activeStep.dataset.label || "";
-      processStage.innerHTML = `<span class="process-stage__num">${num}</span><p class="process-stage__label">${label}</p>`;
     }
   };
 
