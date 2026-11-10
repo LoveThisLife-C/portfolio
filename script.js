@@ -23,6 +23,17 @@
     document.body.classList.add("is-loaded");
   });
 
+  /* Close mobile nav after choosing a page link */
+  if (mobileNav) {
+    mobileNav.querySelectorAll("a").forEach((link) => {
+      link.addEventListener("click", () => {
+        mobileNav.hidden = true;
+        if (toggle) toggle.setAttribute("aria-expanded", "false");
+        document.body.classList.remove("nav-open");
+      });
+    });
+  }
+
   /* Hero cycling specialties */
   const cyclePhrases = [
     "AI & Automation",
@@ -170,17 +181,40 @@
     });
   }
 
-  /* Work category filters */
+  /* Experience filters — tags match every "What I build" offering */
+  const applyExperienceFilter = (filter) => {
+    const next = filter || "all";
+    workFilterBtns.forEach((b) => b.classList.toggle("is-active", b.dataset.filter === next));
+    projectCards.forEach((card) => {
+      const match = next === "all" || card.dataset.category === next || card.dataset.solution === next;
+      card.classList.toggle("is-filtered-out", !match);
+    });
+  };
+
   workFilterBtns.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const filter = btn.dataset.filter || "all";
-      workFilterBtns.forEach((b) => b.classList.toggle("is-active", b === btn));
-      projectCards.forEach((card) => {
-        const match = filter === "all" || card.dataset.category === filter;
-        card.classList.toggle("is-filtered-out", !match);
-      });
+    btn.addEventListener("click", () => applyExperienceFilter(btn.dataset.filter || "all"));
+  });
+
+  /* Solution cards jump to Experience and select that offering's tag */
+  document.querySelectorAll(".solution-card[data-solution]").forEach((card) => {
+    card.addEventListener("click", () => {
+      const slug = card.getAttribute("data-solution");
+      if (!slug) return;
+      applyExperienceFilter(slug);
     });
   });
+
+  /* Support deep-link: #experience?tag=ai-agents or #experience */
+  const syncExperienceFromHash = () => {
+    if (!location.hash.startsWith("#experience")) return;
+    const params = new URLSearchParams(location.hash.split("?")[1] || "");
+    const tag = params.get("tag");
+    if (tag) applyExperienceFilter(tag);
+  };
+  const activeFilterBtn = workFilterBtns.find((b) => b.classList.contains("is-active"));
+  applyExperienceFilter(activeFilterBtn?.dataset.filter || "all");
+  syncExperienceFromHash();
+  window.addEventListener("hashchange", syncExperienceFromHash);
 
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
