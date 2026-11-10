@@ -735,7 +735,7 @@ body.is-loaded .hero-portrait {
 }
 .solution-card {
   position: relative;
-  min-height: 320px;
+  min-height: 240px;
   border-radius: var(--radius-lg);
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -743,7 +743,7 @@ body.is-loaded .hero-portrait {
   transition: transform 0.45s var(--ease), border-color 0.35s ease, box-shadow 0.45s var(--ease);
 }
 @media (min-width: 768px) {
-  .solution-card--wide { grid-column: span 2; min-height: 300px; }
+  .solution-card--wide { grid-column: span 2; min-height: 240px; }
 }
 .solution-card:hover {
   transform: translateY(-6px);
@@ -1206,11 +1206,14 @@ a.work-filter__btn:hover { color: var(--ink); }
 .projects {
   margin-top: 2rem;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1.15rem;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
 }
 @media (min-width: 900px) {
   .projects { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1200px) {
+  .projects { grid-template-columns: repeat(4, 1fr); }
 }
 .project {
   display: flex;
@@ -1228,9 +1231,12 @@ a.work-filter__btn:hover { color: var(--ink); }
 .project-media {
   margin: 0;
   position: relative;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 9;
+  height: 132px;
+  max-height: 132px;
   overflow: hidden;
   min-height: 0;
+  background: #e8eef1;
 }
 .project-media__num { display: none; }
 .project-media::after {
@@ -1245,7 +1251,8 @@ a.work-filter__btn:hover { color: var(--ink); }
   height: 100%;
   min-height: 0;
   object-fit: cover;
-  transform: scale(1.05);
+  object-position: center top;
+  transform: scale(1.02);
   opacity: 1;
   transition: transform 0.6s var(--ease);
 }
@@ -1270,10 +1277,24 @@ a.work-filter__btn:hover { color: var(--ink); }
   border-radius: 4px;
 }
 .project-body {
-  padding: 1rem 1rem 1.15rem;
+  padding: 0.8rem 0.85rem 0.95rem;
   display: flex;
   flex-direction: column;
   flex: 1;
+  gap: 0.35rem;
+}
+.project-body h3 {
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+.project-body p {
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+#experience .xp-skill {
+  font-size: 0.66rem;
+  padding: 0.22rem 0.48rem;
+  line-height: 1.3;
 }
 .project-body h3 {
   margin: 0.35rem 0 0.45rem;
